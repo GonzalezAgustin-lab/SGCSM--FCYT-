@@ -1,0 +1,1312 @@
+@extends('solicitudes.layouts.layout')
+@section('content')
+
+<!-- alertas -->
+
+<div class="content">
+  <div class="row" style="justify-content: center">
+    <div id="alert" class="alert alert-success col-md-10 text-center" style="display: none"></div>
+  </div>
+</div>
+
+@if(Session::has('message'))
+  <div class="container" id="div.alert">
+    <div class="row">
+      <div class="col-1"></div>
+      <div class="alert {{Session::get('alert-class')}} col-10 text-center" role="alert">
+        {{Session::get('message')}}
+      </div>
+    </div>
+  </div>
+@endif
+
+@if(Session::has('message2'))
+  <div class="container" id="div.alert2">
+    <div class="row">
+      <div class="col-1"></div>
+      <div class="alert {{Session::get('alert-class2')}} col-10 text-center" role="alert">
+        {{Session::get('message2')}}
+      </div>
+    </div>
+  </div>
+@endif
+
+<!-- barra para buscar solicitudes -->
+<div class="col">
+  <div class="form-group">
+    <form  method="GET">
+      <div style="display: inline-block;">
+        <label for="id_solicitud" style="display: block; margin-bottom: 5px;"><h6>ID:</h6></label>
+        <input type="text" class="form-control" name="id_solicitud" id="id_solicitud" autocomplete="off" value="{{$id_solicitud}}">
+      </div>
+      <div style="display: inline-block;">
+        <label for="titulo" style="display: block; margin-bottom: 5px;"><h6>Titulo:</h6></label>
+        <input type="text" class="form-control" name="titulo" id="titulo" autocomplete="off" value="{{$titulo}}">
+      </div>
+      <div style="display: inline-block;">
+        <label for="tipo" style="display: block; margin-bottom: 5px;"><h6>Tipo:</h6></label>
+        <select class="form-control" name="id_tipo_solicitud"  id="id_tipo_solicitud">
+          <option value="0">{{'Todos'}} </option>
+          @foreach($tiposSolicitudes as $tipoSolicitud)
+            @if($tipoSolicitud->id == $id_tipo_solicitud)
+              <option value="{{$tipoSolicitud->id}}" selected>{{$tipoSolicitud->nombre}} </option>
+            @else
+              <option value="{{$tipoSolicitud->id}}">{{$tipoSolicitud->nombre}} </option>
+            @endif
+          @endforeach
+        </select>
+      </div>
+      <div style="display: inline-block;">
+        <label for="id_equipo" style="display: block; margin-bottom: 5px;"><h6>Equipo:</h6></label>
+        <input type="text" class="form-control" name="id_equipo" id="id_equipo" autocomplete="off" value="{{$id_equipo}}">
+      </div>
+      <div style="display: inline-block;">
+        <label for="estado" style="display: block; margin-bottom: 5px;"><h6>Estado:</h6></label>
+        <select class="form-control" name="id_estado"  id="id_estado">
+          <option value="0">{{'Todos'}} </option>
+          @foreach($estados as $estado)
+            @if($estado->id == $id_estado)
+              <option value="{{$estado->id}}" selected>{{$estado->nombre}} </option>
+            @else
+              <option value="{{$estado->id}}">{{$estado->nombre}} </option>
+            @endif
+          @endforeach
+        </select>
+      </div>
+      <div style="display: inline-block;">
+        <label for="solicitante" style="display: block; margin-bottom: 5px;"><h6>Solicitante:</h6></label>
+        <select class="form-control" name="id_solicitante"  id="id_solicitante">
+          <option value="0">{{'Todos'}} </option>
+          @foreach($usuarios as $usuario)
+            @if($usuario->idPersona == $id_solicitante)
+              <option value="{{$usuario->idPersona}}" selected>{{$usuario->name}} </option>
+            @else
+              <option value="{{$usuario->idPersona}}">{{$usuario->name}} </option>
+            @endif
+          @endforeach
+        </select>
+      </div>
+      <div style="display: inline-block;">
+        <label for="fecha" style="display: block; margin-bottom: 5px;"><h6>Fecha:</h6></label>
+        <input class="form-control" type="date" id="fecha" name="fecha">
+      </div>
+      <div style="display: inline-block;">
+        <label for="encargado" style="display: block; margin-bottom: 5px;"><h6>Encargado:</h6></label>
+        <select class="form-control" name="id_encargado" id="id_encargado">
+          <option value="0">{{'Todos'}} </option>
+          @foreach($usuarios as $usuario)
+            @foreach($model_as_roles as $model_as_rol)
+              @if(($model_as_rol->role_id == 3) and ($usuario->idUsuario == $model_as_rol->model_id))
+                @if($usuario->idPersona == $id_encargado)
+                  <option value="{{$usuario->idPersona}}" selected>{{$usuario->name}} </option>
+                @else
+                  <option value="{{$usuario->idPersona}}">{{$usuario->name}} </option>
+                @endif
+              @endif
+            @endforeach
+          @endforeach
+        </select>
+      </div>
+      &nbsp
+      <div style="display: inline-block;">
+        <button type="submit" class="btn btn-default">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </button>      
+      </div>
+    </form>          
+  </div>
+</div>
+<!-- tabla de datos -->
+<div class="col-md-12">             
+  <table class="table table-striped table-bordered ">
+    <thead>
+      @can('reporte-solicitudes')
+        <th class="text-center align-top">
+          <label for="checkAll" style="display: inline-block;">
+            <input type="checkbox" id="checkAll" onclick="checkAll()" style="vertical-align: middle; margin-right: 5px;">
+          </label>
+        </th>
+      @endcan
+      <th class="text-center align-top">ID</th>
+      <th class="text-center align-top">Titulo</th>
+      <th class="text-center align-top">Tipo de solicitud</th>
+      <th class="text-center align-top">Equipo</th>
+      <th class="text-center align-top">Estado</th>     
+      <th class="text-center align-top">Fecha de emision</th> 
+      <th class="text-center align-top">Solicitante</th>
+      <th class="text-center align-top">Encargado</th>  
+      <th class="text-center align-top">Acciones</th>  
+    </thead>
+    <tbody>
+        @foreach($solicitudes as $solicitud)
+          <tr>
+            @can('reporte-solicitudes')
+              <td><label><input type="checkbox" id="cbox1" value="first_checkbox"></label><br></td>
+            @endcan
+            <td>{{$solicitud->id}}</td>
+            <td>{{$solicitud->titulo}}</td>
+            <td>{{$solicitud->tipo_solicitud}}</td>
+            <td>
+              @if($solicitud->id_equipo)
+                <p>{{$solicitud->id_equipo}}</p>
+              @else
+                <p style="color:gainsboro">N/A</p>
+              @endif
+            </td>
+            <td>{{$solicitud->estado}}</td>
+            <td>{{ \Carbon\Carbon::parse($solicitud->fechaEmision)->format('d/m/Y') }}</td>
+            @if($solicitud->fechaFinalizacion)
+              <!--<td>{{ \Carbon\Carbon::parse($solicitud->fechaFinalizacion)->format('d/m/Y') }}</td>  --> 
+            @else     
+              <!--<td></td>  --> 
+            @endif  
+            <td>{{$solicitud->nombre_solicitante}} {{$solicitud->apellido_solicitante}}</td>
+            <td style="display: none;">{{$solicitud->descripcion}}</td>
+            <td>
+              @if($solicitud->nombre_encargado)
+                {{$solicitud->nombre_encargado}} {{$solicitud->apellido_encargado}}
+              @else
+                <p style="color:gainsboro">Sin asignar</p>
+              @endif
+            </td>
+            <td>
+              <div class="text-center">
+                <div class="btn-group">
+                  <div class="btn-container">
+                    <i id="detalle" class="fa-solid fa-circle-info detalle" onclick='fnOpenModalShow({{$solicitud->id}})' title="Detalle"></i>
+                  </div>
+                  @unlessrole('Empleado')
+                    <div class="btn-container">
+                      <i id="actualizar" class="fa-solid fa-arrow-up-from-bracket actualizar-editar" onclick='fnOpenModalUpdate({{$solicitud->id}})' title="Actualizar"></i>
+                    </div>
+                  @endunlessrole
+                  @if(!$solicitud->nombre_encargado)
+                    <div class="btn-container">
+                      <i id="asignar" class="fa-solid fa-user-plus asignar" onclick='fnOpenModalAssing({{$solicitud->id}})' title="Asignar"></i>
+                    </div>
+                  @endif
+                  @if($solicitud->estado == "Aprob. pendiente" && $solicitud->id_solicitante == $personaAutenticada->id_p)
+                    <div class="btn-container">
+                      <form id="aprobarForm{{$solicitud->id}}" action="{{ route('aprobar_solicitud', $solicitud->id) }}" method="POST" style="display: inline;">
+                        @csrf
+                        <i id="aprobar" class="fa-solid fa-check aprobar" onclick="aprobarSolicitud({{$solicitud->id}})" title="Aprobar" data-position="top" data-delay="50" data-tooltip="aprobar"></i>
+                      </form>
+                    </div>
+                    <div class="btn-container">
+                      <i id="reclamar" class="fa-solid fa-bullhorn reclamar" onclick='fnOpenModalReclaim({{$solicitud->id}})' title="Reclamar"></i>
+                    </div>
+                  @endif
+                  @if($solicitud->estado == "Abierta" && $solicitud->id_solicitante == $personaAutenticada->id_p)
+                    <div class="btn-container">
+                      <i id="editar" class="fa-solid fa-pen-to-square actualizar-editar" onclick='fnOpenModalEdit({{$solicitud->id}})' data-tipo="{{$solicitud->tipo_solicitud}}" id="edit-{{$solicitud->id}}" title="Editar"></i>
+                    </div>
+                  @endif
+                  @can('eliminar-solicitud')
+                    <div class="btn-container">
+                      <form action="{{ url('destroy_solicitud', $solicitud->id) }}" method="POST" onsubmit="return confirm('Está seguro que desea eliminar esta solicitud?')" style="display: inline;">
+                        @csrf
+                        @method('DELETE')
+                        <button class="btnEliminar" type="submit" title="Eliminar">
+                          <i class="eliminar fa-solid fa-circle-xmark"></i>
+                        </button>
+                      </form>
+                    </div>
+                  @endcan
+                </div>
+              </div>
+            </td>
+          </tr>
+        @endforeach
+    </tbody>
+  </table>
+
+  <div class="d-flex justify-content-between">
+    <div>
+      <button class="btn btn-info" onclick="Report()"><i class="fa-solid fa-file-arrow-down"></i></button>
+    </div>
+    <div class="pagination">
+      {{ $solicitudes->links('pagination::bootstrap-4') }}
+    </div>
+  </div>
+
+  <style>
+    .btnEliminar{
+      background: transparent; /* Fondo transparente */
+      border: none; /* Sin borde */
+      padding: 0; /* Sin padding */
+      cursor: pointer; /* Cambia el cursor al pasar sobre el botón */
+      outline: none; /* Elimina el borde de enfoque */
+    }
+
+    .btnEliminar:focus {
+      outline: none; /* Elimina el borde de enfoque cuando el botón está enfocado */
+    }
+  </style>
+
+  <div class="modal fade" id="show2" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog estilo" role="document">
+      <div class="modal-content">
+        <form id="myForm" method="POST" enctype="multipart/form-data">
+          {{csrf_field()}}
+          <div id="modalshow" class="modal-body">
+            <!-- Datos -->
+          </div>
+          <div id="modalfooter" class="modal-footer">
+            <!-- Footer -->
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="show3" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog estilo" role="document">
+      <div class="modal-content">
+        <form id="myForm3" method="POST" enctype="multipart/form-data">
+          {{csrf_field()}}
+          <div id="modalshow3" class="modal-body">
+            <!-- Datos -->
+          </div>
+          <div id="modalfooter3" class="modal-footer">
+            <!-- Footer -->
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="show4" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog estilo" role="document">
+      <div class="modal-content">
+        <form id="myForm4" method="POST" enctype="multipart/form-data">
+          {{csrf_field()}}
+          <div id="modalshow4" class="modal-body">
+            <!-- Datos -->
+          </div>
+          <div id="modalfooter4" class="modal-footer">
+            <!-- Footer -->
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Incluir archivos CSS de Select2 -->
+<link href="{{ asset('select2/dist/css/select2.min.css') }}" rel="stylesheet" />
+<script src="{{ asset('select2/dist/js/select2.min.js') }}"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.5.3/jspdf.min.js"></script>
+
+<script>
+
+  var url_getSolicitud = "{{ url('getSolicitud') }}";
+  var url_show_edit_solicitud = "{{ url('show_edit_solicitud') }}";
+  var url_show_store_solicitud = "{{ url('show_store_solicitud') }}";
+  var url_show_solicitud = "{{ url('show_solicitud') }}";
+  var url_show_update_solicitud = "{{ url('show_update_solicitud') }}";
+  var url_show_assing_solicitud = "{{ url('show_assing_solicitud') }}";
+  var url_show_reclamar_solicitud = "{{ url('show_reclamar_solicitud') }}";
+  var url_show_mostrar_equipos_mant_solicitudes = "{{ url('show_mostrar_equipos_mant_solicitudes') }}";
+  var url_getHistoricos = "{{ url('getHistoricos') }}";
+
+  async function Report() {
+    // Obtener todos los checkboxes seleccionados
+    var checkboxes = document.querySelectorAll('input[type="checkbox"]:checked:not(#checkAll)');
+
+    // Si no hay ningún checkbox seleccionado, mostrar un mensaje y salir de la función
+    if (checkboxes.length === 0) {
+      alert("Por favor, seleccione al menos una solicitud.");
+      return;
+    }
+
+    // Crear un nuevo documento PDF
+    var doc = new jsPDF('p', 'mm', 'a4');
+    // Definir la variable pageHeight
+    var pageHeight = doc.internal.pageSize.height;
+    // Agregar el título al PDF
+    doc.setFontSize(14);
+    doc.setFontStyle("bold");
+    doc.text("Solicitudes seleccionadas", 10, 10);
+    doc.setLineWidth(0.5); // Establecer el grosor del subrayado
+    doc.line(10, 12, 72, 12); // Dibujar una línea debajo del texto
+
+    // Agregar las solicitudes seleccionadas al PDF
+    var y = 20;
+    doc.setFontSize(10);
+
+    var content = [];
+
+    for (var i = 0; i < checkboxes.length; i++) {
+      var checkbox = checkboxes[i];
+      var row = checkbox.closest('tr');
+      var id = row.querySelector('td:nth-child(2)').textContent.trim();
+      var titulo = row.querySelector('td:nth-child(3)').textContent.trim();
+      var tipo = row.querySelector('td:nth-child(4)').textContent.trim();
+      var equipo = row.querySelector('td:nth-child(5)').textContent.trim();
+      var falla = row.querySelector('td:nth-child(7)').textContent.trim();
+
+      // Ajustar el diseño del contenido del PDF
+      content.push({label: "ID: ", value: id, x: 10, y: y })
+      content.push({ label: "Título: ", value: titulo, x: 50, y: y })
+
+      if (tipo == "Especializado") {
+        content.push({ label: "Equipo: ", value: equipo, x: 10, y: y + 5 });
+        content.push({ label: "Falla: ", value: falla, x: 50, y: y + 5 });
+      } else if (tipo == "Edilicio") {
+        content.push({ label: "Falla: ", value: falla, x: 10, y: y + 5 });
+      }
+
+      try {
+        // Obtener los históricos de la solicitud actual
+        var historicos = await getHistoricos(id);
+        // Agregar los históricos al contenido del PDF
+        if (tipo == "Especializado" || tipo == "Edilicio") {
+          var historicoOffset = 10;
+        } else {
+          var historicoOffset = 5;
+        }
+        for (var j = 0; j < historicos.length; j++) {
+          var historico = historicos[j];
+          var estado = historico.estado;
+          var fecha = historico.fecha;
+          var nombre = historico.nombre;
+          var descripcion = historico.descripcion;
+          var repuestos = historico.repuestos;
+          
+          var historicoContent = [
+            { label: "Histórico " + (j + 1) + ": ", value: "", x: 10, y: y + historicoOffset },
+            { label: "Fecha: ", value: fecha, x: 20, y: y + historicoOffset + 5 },
+            { label: "Estado: ", value: estado, x: 95, y: y + historicoOffset + 5 },
+            { label: "Nombre: ", value: nombre, x: 20, y: y + historicoOffset + 10 },
+          ];
+
+          if (repuestos) {
+            si = "Si";
+            historicoContent.push({ label: "Repuestos: ", value: si, x: 95, y: y + historicoOffset + 10 });
+          } else {
+            no = "No";
+            historicoContent.push({ label: "Repuestos: ", value: no, x: 95, y: y + historicoOffset + 10 });
+          }
+
+          if (descripcion) {
+            nada = "";
+            historicoContent.push({ label: "Descripción: ", value: nada, x: 20, y: y + historicoOffset + 15 });
+          }
+
+          // Incrementar el desplazamiento para el próximo histórico
+          if (descripcion) {
+            historicoOffset += 20;
+            var lines = doc.splitTextToSize(descripcion, 150); // Dividir la descripción en líneas de 150 unidades de ancho
+            for (var k = 0; k < lines.length; k++) {
+              historicoContent.push({ label: "", value: lines[k], x: 20, y: y + historicoOffset + (k * 5) }); // Añadir cada línea como una entrada separada
+            }
+            historicoOffset += lines.length * 5;
+          } else {
+            historicoOffset += 15;
+          }
+          content = content.concat(historicoContent);
+        }
+
+        y += historicoOffset;
+
+        // Incrementar la posición vertical para la próxima solicitud
+      } catch (error) {
+        console.error('Error al obtener los históricos:', error);
+      }
+    }
+    // Agregar el contenido al PDF
+    var avance = 0;
+    var contador = 1;
+    var auxiliarY = 0;
+    var idInserted = false;
+    var equipoInserted = false;
+    var fechaInserted = false;
+    var nombreInserted = false;
+    for (var k = 0; k < content.length; k++) {
+      var item = content[k];
+      if(auxiliarY >= (pageHeight - 20) && !idInserted && !equipoInserted && !fechaInserted && !nombreInserted){
+        doc.addPage();
+        contador += 1;
+        avance += 30;
+      }
+      if(contador > 1){
+        auxiliarY = (item.y-(pageHeight*(contador-1))+avance);
+        doc.setFontStyle("bold"); // Establecer estilo de fuente en negrita para la etiqueta "ID: " 
+        doc.text(item.label, item.x, auxiliarY);
+        doc.setFontStyle("normal"); // Establecer estilo de fuente normal para el valor
+
+        var labelWidth = doc.getTextWidth(item.label); // Obtener el ancho del label
+        var valueX = item.x + labelWidth + 1; // Agregar un pequeño espacio después del label
+
+        if (item.label.includes("ID")) {
+          doc.setLineWidth(0.5);
+          doc.line(10, auxiliarY - 4, 200, auxiliarY - 4);
+          idInserted = true;
+        }else{idInserted = false;}
+
+        if (item.label.includes("Equipo")) {
+          equipoInserted = true;
+        }else{equipoInserted = false;}
+
+        if (item.label.includes("Fecha")) {
+          fechaInserted = true;
+        }else{fechaInserted = false;}
+
+        if (item.label.includes("Nombre")) {
+          nombreInserted = true;
+        }else{nombreInserted = false;}
+
+        doc.text(item.value, valueX, auxiliarY);
+      }else{
+        doc.setFontStyle("bold"); // Establecer estilo de fuente en negrita para la etiqueta "ID: " 
+        doc.text(item.label, item.x, item.y);
+        doc.setFontStyle("normal"); // Establecer estilo de fuente normal para el valor
+
+        var labelWidth = doc.getTextWidth(item.label); // Obtener el ancho del label
+        var valueX = item.x + labelWidth + 1; // Agregar un pequeño espacio después del label
+
+        if (item.label.includes("ID")) {
+          if(auxiliarY != 0){
+            doc.setLineWidth(0.5);
+            doc.line(10, auxiliarY + 1, 200, auxiliarY + 1);
+          }
+          idInserted = true;
+        }else{idInserted = false;}
+
+        if (item.label.includes("Equipo")) {
+          equipoInserted = true;
+        }else{equipoInserted = false;}
+
+        if (item.label.includes("Fecha")) {
+          fechaInserted = true;
+        }else{fechaInserted = false;}
+
+        if (item.label.includes("Nombre")) {
+          nombreInserted = true;
+        }else{nombreInserted = false;}
+        
+        doc.text(item.value, valueX, item.y);
+        auxiliarY = item.y;
+      }
+    }
+    // Guardar el documento PDF después de procesar todas las solicitudes
+    doc.save('reporte.pdf');
+  }
+
+  async function ReporteSolicitudes() {
+    // Realizar una petición al servidor para obtener todas las solicitudes con sus históricos
+    const response = await fetch('/generar-reporte');
+    const solicitudes = await response.json();
+
+    if (!solicitudes.length) {
+        alert("No hay solicitudes disponibles.");
+        return;
+    }
+
+    // Crear un nuevo documento PDF
+    var doc = new jsPDF('p', 'mm', 'a4');
+    var pageHeight = doc.internal.pageSize.height;
+    
+    // Agregar el título al PDF
+    doc.setFontSize(14);
+    doc.setFontStyle("bold");
+    doc.text("Solicitudes y sus Históricos", 10, 10);
+    doc.line(10, 12, 72, 12);
+
+    var y = 20;
+    doc.setFontSize(10);
+    var content = [];
+
+    // Recorrer las solicitudes y sus históricos
+    for (let solicitud of solicitudes) {
+        let id = solicitud.id;
+        let titulo = solicitud.titulo;
+        let tipo = solicitud.tipo;
+        let equipo = solicitud.equipo;
+        let falla = solicitud.falla;
+
+        // Agregar datos de la solicitud al PDF
+        content.push({ label: "ID: ", value: id, x: 10, y: y });
+        content.push({ label: "Título: ", value: titulo, x: 50, y: y });
+
+        if (tipo === "Especializado") {
+            content.push({ label: "Equipo: ", value: equipo, x: 10, y: y + 5 });
+            content.push({ label: "Falla: ", value: falla, x: 50, y: y + 5 });
+        } else if (tipo === "Edilicio") {
+            content.push({ label: "Falla: ", value: falla, x: 10, y: y + 5 });
+        }
+
+        y += 15;
+
+        // Recorrer los históricos de cada solicitud
+        let historicoOffset = 10;
+        for (let historico of solicitud.historicos) {
+            let estado = historico.estado;
+            let fecha = historico.fecha;
+            let nombre = historico.nombre;
+            let descripcion = historico.descripcion;
+            let repuestos = historico.repuestos ? "Sí" : "No";
+
+            content.push({ label: "Histórico: ", value: "", x: 10, y: y + historicoOffset });
+            content.push({ label: "Fecha: ", value: fecha, x: 20, y: y + historicoOffset + 5 });
+            content.push({ label: "Estado: ", value: estado, x: 95, y: y + historicoOffset + 5 });
+            content.push({ label: "Nombre: ", value: nombre, x: 20, y: y + historicoOffset + 10 });
+            content.push({ label: "Repuestos: ", value: repuestos, x: 95, y: y + historicoOffset + 10 });
+
+            // Si hay descripción, dividir en líneas y agregar al PDF
+            if (descripcion) {
+                let lines = doc.splitTextToSize(descripcion, 150);
+                for (let i = 0; i < lines.length; i++) {
+                    content.push({ label: "", value: lines[i], x: 20, y: y + historicoOffset + (i * 5) });
+                }
+                historicoOffset += lines.length * 5;
+            }
+
+            historicoOffset += 15;
+        }
+
+        y += historicoOffset;
+    }
+
+    // Agregar el contenido al PDF
+    var avance = 0;
+    var contador = 1;
+    var auxiliarY = 0;
+
+    for (let item of content) {
+        if (auxiliarY >= (pageHeight - 20)) {
+            doc.addPage();
+            contador += 1;
+            avance += 30;
+        }
+
+        if (contador > 1) {
+            auxiliarY = (item.y - (pageHeight * (contador - 1)) + avance);
+        } else {
+            auxiliarY = item.y;
+        }
+
+        doc.setFontStyle("bold");
+        doc.text(item.label, item.x, auxiliarY);
+        doc.setFontStyle("normal");
+        doc.text(item.value, item.x + doc.getTextWidth(item.label) + 1, auxiliarY);
+    }
+
+    // Guardar el documento PDF
+    doc.save('reporte_solicitudes.pdf');
+  }
+
+</script>
+
+<script>
+  // Obtén el campo de entrada de fecha por su ID
+  var fechaInput = document.getElementById('fecha');
+
+  // Verifica si hay un valor guardado en el almacenamiento local (localStorage)
+  if (localStorage.getItem('fechaValue')) {
+    // Restaura el valor guardado en el campo de entrada de fecha
+    fechaInput.value = localStorage.getItem('fechaValue');
+  }
+
+  // Escucha el evento 'change' del campo de entrada de fecha
+  fechaInput.addEventListener('change', function() {
+    // Guarda el valor seleccionado en el almacenamiento local (localStorage)
+    localStorage.setItem('fechaValue', fechaInput.value);
+  });
+</script>
+<script>
+  function manejarSeleccion(idEquipo) {
+    $('#equipo').val(idEquipo).trigger('change');
+    $('#equipo1').val(idEquipo).trigger('change');
+  }
+
+  var ruta = '{{ route('mostrar_equipos_mant') }}';
+  var ruta_create = '{{ route('store_solicitud') }}';
+  var ruta_update = '{{ route('update_solicitud') }}';
+  var ruta_edit = '{{ route('edit_solicitud') }}';
+  var ruta_assing = '{{ route('assing_solicitud') }}';
+  var ruta_reclaim = '{{ route('reclaim_solicitud') }}';
+  var closeButton = $('<button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>');
+  var saveButton = $('<button type="submit" class="btn btn-info" id="saveButton" onclick="fnSaveSolicitud()">Guardar</button>');
+  var saveButton2 = $('<button type="submit" class="btn btn-info" id="saveButton2" onclick="fnSaveSolicitud2()">Guardar</button>');
+
+
+  function fnSaveSolicitud() {
+    var form = document.getElementById('myForm');
+    if (form.checkValidity()) {
+      $('#saveButton').prop('disabled', true);
+      $('#myForm').submit();
+    } else {
+      console.log('El formulario no es válido. Completar los campos requeridos antes de enviar.');
+    }
+  }
+
+  function fnSaveSolicitud2() {
+    var form = document.getElementById('myForm4');
+    if (form.checkValidity()) {
+      $('#saveButton2').prop('disabled', true);
+      $('#myForm4').submit();
+    } else {
+      console.log('El formulario no es válido. Completar los campos requeridos antes de enviar.');
+    }
+  }
+  
+  function getSolicitud(idSolicitud) {
+    return new Promise(function(resolve, reject) {
+      $.ajax({
+        url: url_getSolicitud + "/" + idSolicitud,
+        method: 'GET',
+        success: function(data) {
+          resolve(data);
+        },
+        error: function(error) {
+          reject(error);
+        }
+      });
+    });
+  }
+
+  var solicitud;
+  //modal edit
+  async function fnOpenModalEdit(id) {
+    var myModal = new bootstrap.Modal(document.getElementById('show4'));
+    $.ajax({
+      url: url_show_edit_solicitud + "/" + id,
+      type: 'GET',
+      success: function(data) {
+        // Borrar contenido anterior
+        $("#modalshow4").empty();
+        // Establecer el contenido del modal
+        $("#modalshow4").html(data);
+
+        // Borrar contenido anterior
+        $("#modalfooter4").empty();
+        // Agregar el botón "Cerrar y Guardar" al footer
+        $("#modalfooter4").append(closeButton);
+        $("#modalfooter4").append(saveButton2);
+
+        // Cambiar la acción del formulario
+        $('#myForm4').attr('action', ruta_edit);
+
+        // Mostrar el modal
+        myModal.show();
+
+        // Cambiar el tamaño del modal a "modal-lg"
+        var modalDialog = myModal._element.querySelector('.modal-dialog');
+        modalDialog.classList.remove('modal-sm');
+        modalDialog.classList.remove('modal-lg');
+      },
+    });
+    try {
+      solicitud = await getSolicitud(id);
+    } catch (error) {
+      console.error('Error al obtener la solicitud:', error);
+    }
+  }
+
+  $('#show4').on('show.bs.modal', function (event){
+    $.get('select_tablas_solicitudes/',function(data){
+      var divDescripcion = $('#div_descripcion1')
+      divDescripcion.hide();
+      var htmlSelectArea = '<option value="">Seleccione </option>'
+      var htmlSelectLocalizacion = '<option value="">Seleccione </option>'
+      var htmlSelectTipoSolicitud = '<option value="">Seleccione </option>'
+      var htmlSelectEquipo = '<option value="">Seleccione </option>'
+      var htmlDescripcionEquipo = ''
+      // [0]=areas [1]=localizaciones [2]=tipo_solicitudes [3]=equipos_mant [5]=tipos_equipos
+
+      var equipoPrecargado = false;
+      var areaPrecargada = false;
+      var tipoPrecargado = false;
+
+      var tipoSolicitudSelected;
+      var equipoSelected;
+      var areaSelected;
+
+      console.log(data);
+      data[2].forEach(tipo_solicitud => {
+        if (tipo_solicitud.nombre === solicitud[0].nombreTipoSolicitud) {
+          htmlSelectTipoSolicitud += `<option value="${tipo_solicitud.id}" selected>${tipo_solicitud.nombre}</option>`;
+          tipoPrecargado = true;
+        } else {
+          htmlSelectTipoSolicitud += `<option value="${tipo_solicitud.id}">${tipo_solicitud.nombre}</option>`;
+        }
+      });
+          
+      data[0].forEach(item => {
+        if ((item.id_a === solicitud[0].idAreaProyecto) || (item.id_a === solicitud[0].idAreaEquipo) || (item.id_a === solicitud[0].idAreaEdilicio)) {
+          htmlSelectArea += `<option value="${item.id_a}" selected>${item.nombre_a}</option>`;
+          areaPrecargada = true;
+        } else {
+          htmlSelectArea += `<option value="${item.id_a}">${item.nombre_a}</option>`;
+        }
+      });
+
+      data[3].forEach(equipo => {
+        if (equipo.id === solicitud[0].idEquipo) {
+          htmlSelectEquipo += `<option value="${equipo.id}" selected>${equipo.id}</option>`;
+          equipoPrecargado = true;
+        } else {
+          htmlSelectEquipo += `<option value="${equipo.id}">${equipo.id}</option>`;
+        }
+      });
+
+      $('#tipo_solicitud1').on('change', function () {
+        tipoSolicitudSelected = $(this).val();
+        const divEquipo = $('#div_equipo1');
+        if (!tipoSolicitudSelected) {
+          divEquipo.show();
+          document.getElementById("localizacion1").setAttribute("required", "required");
+        } 
+        else if (tipoSolicitudSelected == 1) {
+          divEquipo.show();
+          document.getElementById("localizacion1").setAttribute("required", "required");
+        } 
+        else if (tipoSolicitudSelected == 2) {
+          divEquipo.hide();
+          divDescripcion.hide();
+          document.getElementById("localizacion1").setAttribute("required", "required");
+        }
+        else if (tipoSolicitudSelected == 3) {
+          divEquipo.hide();
+          divDescripcion.hide();
+          $('#div_localizacion1').hide();
+          document.getElementById("localizacion1").removeAttribute("required");
+        }
+        $('#area1').prop('disabled', false);
+        $('#localizacion1').prop('disabled', false);
+        $('#descripcion_equipo1').prop('disabled', false);
+      }); 
+
+      $('#equipo1').on('change', function () {
+        var equipoSelected = $(this).val();
+        if (!equipoSelected) {
+          $('#div_descripcion1').hide();
+          $('#area1').prop('disabled', false);
+          $('#localizacion1').prop('disabled', false);
+        } else {
+          for (var k = 0; k < data[3].length; k++) {
+            if (equipoSelected == data[3][k].id) {
+              var aux_tipo_equipo = data[3][k].id_tipo;
+              // Obtener el id_area y id_localizacion del equipo seleccionado
+              var idAreaEquipo = data[3][k].id_area;
+              var idLocalizacionEquipo = data[3][k].id_localizacion;
+              var htmlDescripcionEquipo = data[3][k].descripcion;
+              // Establecer el valor de id_area en el select de área
+              $('#descripcion_equipo1').val(htmlDescripcionEquipo).trigger('change');
+              $('#area1').val(idAreaEquipo).trigger('change');
+              // Establecer el valor de id_localizacion en el select de localización, o seleccionar la opción vacía si es nulo
+              if (idLocalizacionEquipo) {
+                $('#localizacion1').val(idLocalizacionEquipo).trigger('change');
+              } else {
+                // Agregar la opción "No aplica" en el select de localización
+                $('#localizacion1').append('<option value="0">No aplica</option>');
+                $('#localizacion1').val('0').trigger('change');
+              }
+              $('#area1').prop('disabled', true);
+              $('#localizacion1').prop('disabled', true);
+              $('#descripcion_equipo1').prop('disabled', true);
+            }
+          }
+          $('#tipo_solicitud1').val('1');
+          $('#div_localizacion1').show();
+          $('#div_descripcion1').show();
+        }
+      });
+
+      $('#area1').on('change', function () {
+        areaSelected = $(this).val();
+
+        // Obtener las localizaciones correspondientes al área seleccionada y agregarlas al select correspondiente
+        let htmlSelectLocalizacion = '<option value="">Seleccione</option>';
+        data[1].forEach(localizacion => {
+          if (localizacion.id_area == areaSelected) {
+            if ((localizacion.id === solicitud[0].idLocalizacionEquipo) || (localizacion.id === solicitud[0].idLocalizacionEdilicio)){
+              htmlSelectLocalizacion += `<option value="${localizacion.id}" selected>${localizacion.nombre}</option>`;
+
+            }else{
+              htmlSelectLocalizacion += `<option value="${localizacion.id}">${localizacion.nombre}</option>`;
+            }
+          }
+        });
+
+        if(!areaSelected){
+          $('#div_localizacion1').hide();
+        } else{
+          if (tipoSolicitudSelected == 3) {
+            $('#div_localizacion1').hide();
+          }
+          else{
+            $('#div_localizacion1').show();
+          }
+          $('#localizacion1').html(htmlSelectLocalizacion);
+        }
+      });
+      
+      $('#idSolicitud1').val(solicitud[0].idSolicitud);
+      $('#estado1').val(solicitud[0].estado);
+      $('#titulo1').val(solicitud[0].titulo);
+      $("#descripcion1").val(solicitud[0].descripcion);
+      $('#tipo_solicitud1').html(htmlSelectTipoSolicitud);
+      $('#equipo1').select2();
+      $('#equipo1').html(htmlSelectEquipo); 
+      $('#area1').html(htmlSelectArea);
+      $('#localizacion1').html(htmlSelectLocalizacion);
+
+      if(tipoPrecargado){
+        $('#tipo_solicitud1').trigger('change');
+      }
+
+      if(equipoPrecargado){
+        $('#equipo1').trigger('change');
+        $('#descripcion_equipo1').val(solicitud[0].descripcionEquipo);
+      }
+
+      if(areaPrecargada){
+        $('#area1').trigger('change');
+      }
+    });
+  });
+
+  //modal store
+  function fnOpenModalShowEquipos() {
+    var myModal3 = new bootstrap.Modal(document.getElementById('show3'));
+    $.ajax({
+      url: url_show_mostrar_equipos_mant_solicitudes + "/",
+      type: 'GET',
+      success: function(data) {
+        // Borrar contenido anterior
+        $("#modalshow3").empty();
+        // Establecer el contenido del modal
+        $("#modalshow3").html(data);
+
+        // Borrar contenido anterior
+        $("#modalfooter3").empty();
+
+        // Agregar el botón "Cerrar" al footer del modal interno
+        $("#modalfooter3").append(closeButton);
+
+        // Agregar listener al botón "Cerrar" del modal secundario
+        closeButton.click(function(event) {
+          event.stopPropagation();
+          myModal3.hide();
+        });
+
+        // Mostrar el modal
+        myModal3.show();
+
+        var modalDialog = myModal3._element.querySelector('.modal-dialog');
+        modalDialog.classList.remove('modal-sm');
+        modalDialog.classList.add('modal-lg');
+        modalDialog.style.width = '90%'; // Añade esta línea
+        modalDialog.style.maxWidth = '90%'; // Añade esta línea
+      },
+    });
+  }
+
+  //modal store
+  function fnOpenModalStore() {
+    var myModal = new bootstrap.Modal(document.getElementById('show2'));
+    var url = url_show_store_solicitud + "/";
+    var closeButton2 = $('<button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>');
+    $.get(url, function(data) {
+      // Borrar contenido anterior
+      $("#modalshow").empty();
+
+      // Establecer el contenido del modal
+      $("#modalshow").html(data);
+
+      // Borrar contenido anterior
+      $("#modalfooter").empty();
+
+      // Agregar el botón "Cerrar y Guardar" al footer
+      $("#modalfooter").append(closeButton2);
+      $("#modalfooter").append(saveButton);
+
+      // Cambiar la acción del formulario
+      $('#myForm').attr('action', ruta_create);
+
+      // Mostrar el modal
+      myModal.show();
+
+      // Cambiar el tamaño del modal a "modal-lg"
+      var modalDialog = myModal._element.querySelector('.modal-dialog');
+      modalDialog.classList.remove('modal-sm');
+      modalDialog.classList.remove('modal-lg');
+    });
+
+    $('#show2').on('show.bs.modal', function (event){
+      $.get('select_tablas_solicitudes/',function(data){
+        var divDescripcion = $('#div_descripcion')
+        divDescripcion.hide();
+        var htmlSelectArea = '<option value="">Seleccione </option>'
+        var htmlSelectLocalizacion = '<option value="">Seleccione </option>'
+        var htmlSelectTipoSolicitud = '<option value="">Seleccione </option>'
+        var htmlSelectEquipo = '<option value="">Seleccione </option>'
+        var htmlDescripcionEquipo = ''
+        // [0]=areas [1]=localizaciones [2]=tipo_solicitudes [3]=equipos_mant [5]=tipos_equipos
+
+        htmlSelectArea += data[0].map(item => `<option value="${item.id_a}">${item.nombre_a}</option>`).join('');
+        htmlSelectTipoSolicitud += data[2].map(tipo_solicitud => `<option value="${tipo_solicitud.id}">${tipo_solicitud.nombre}</option>`).join('');
+        htmlSelectEquipo += data[3].map(equipo => `<option value="${equipo.id}">${equipo.id}</option>`).join('');
+
+        var tipoSolicitudSelected;
+        var equipoSelected;
+        var areaSelected;
+
+        $("#equipo").select2();
+        $('#equipo').html(htmlSelectEquipo);
+        $('#tipo_solicitud').html(htmlSelectTipoSolicitud);
+        $('#area').html(htmlSelectArea);
+        $('#localizacion').html(htmlSelectLocalizacion);
+
+        $('#tipo_solicitud').on('change', function () {
+          tipoSolicitudSelected = $(this).val();
+          const divEquipo = $('#div_equipo');
+
+          if (!tipoSolicitudSelected) {
+            divEquipo.show();
+            document.getElementById("localizacion").setAttribute("required", "required");
+          } 
+          else if (tipoSolicitudSelected == 1) {
+            divEquipo.show();
+            document.getElementById("localizacion").setAttribute("required", "required");
+          } 
+          else if (tipoSolicitudSelected == 2) {
+            divEquipo.hide();
+            divDescripcion.hide();
+            document.getElementById("localizacion").setAttribute("required", "required");
+          }
+          else if (tipoSolicitudSelected == 3) {
+            divEquipo.hide();
+            divDescripcion.hide();
+            $('#div_localizacion').hide();
+            document.getElementById("localizacion").removeAttribute("required");
+          }
+          $('#area').prop('disabled', false);
+          $('#localizacion').prop('disabled', false);
+          $('#descripcion_equipo').prop('disabled', false);
+        }); 
+
+        $('#equipo').on('change', function () {
+          var equipoSelected = $(this).val();
+          if (!equipoSelected) {
+            $('#div_descripcion').hide();
+            $('#area').prop('disabled', false);
+            $('#localizacion').prop('disabled', false);
+          } else {
+            for (var k = 0; k < data[3].length; k++) {
+              if (equipoSelected == data[3][k].id) {
+                var aux_tipo_equipo = data[3][k].id_tipo;
+                // Obtener el id_area y id_localizacion del equipo seleccionado
+                var idAreaEquipo = data[3][k].id_area;
+                var idLocalizacionEquipo = data[3][k].id_localizacion;
+                var htmlDescripcionEquipo = data[3][k].descripcion;
+                // Establecer el valor de id_area en el select de área
+                $('#descripcion_equipo').val(htmlDescripcionEquipo).trigger('change');
+                $('#area').val(idAreaEquipo).trigger('change');
+                // Establecer el valor de id_localizacion en el select de localización, o seleccionar la opción vacía si es nulo
+                if (idLocalizacionEquipo) {
+                  $('#localizacion').val(idLocalizacionEquipo).trigger('change');
+                } else {
+                  // Agregar la opción "No aplica" en el select de localización
+                  $('#localizacion').append('<option value="0">No aplica</option>');
+                  $('#localizacion').val('0').trigger('change');
+                }
+                $('#area').prop('disabled', true);
+                $('#localizacion').prop('disabled', true);
+                $('#descripcion_equipo').prop('disabled', true);
+              }
+            }
+            $('#tipo_solicitud').val('1');
+            $('#div_localizacion').show();
+            $('#div_descripcion').show();
+          }
+        });
+
+        $('#area').on('change', function () {
+          areaSelected = $(this).val();
+
+          // Obtener las localizaciones correspondientes al área seleccionada y agregarlas al select correspondiente
+          let htmlSelectLocalizacion = '<option value="">Seleccione</option>';
+          data[1].forEach(localizacion => {
+            if (localizacion.id_area == areaSelected) {
+              htmlSelectLocalizacion += `<option value="${localizacion.id}">${localizacion.nombre}</option>`;
+            }
+          });
+
+          if(!areaSelected){
+            $('#div_localizacion').hide();
+          } else{
+            if (tipoSolicitudSelected == 3) {
+              $('#div_localizacion').hide();
+            }
+            else{
+              $('#div_localizacion').show();
+            }
+            $('#localizacion').html(htmlSelectLocalizacion);
+          }
+        });
+      });
+    });
+  }
+    
+  function checkAll() {
+    // Obtén el estado actual del checkbox "checkAll"
+    var checkAllCheckbox = document.getElementById("checkAll");
+    var isChecked = checkAllCheckbox.checked;
+
+    // Obtén todos los checkboxes generados por el bucle
+    var checkboxes = document.querySelectorAll("input[type='checkbox'][id^='cbox1']");
+
+    // Marca o desmarca todos los checkboxes según el estado del checkbox "checkAll"
+    for (let i = 0; i < checkboxes.length; i++) {
+      checkboxes[i].checked = isChecked;
+    }
+
+    // Si alguno de los checkboxes generados se desmarca, desmarca también el checkbox "checkAll"
+    for (let i = 0; i < checkboxes.length; i++) {
+      checkboxes[i].addEventListener("change", function() {
+        if (!this.checked) {
+          checkAllCheckbox.checked = false;
+        }
+      });
+    }
+
+    checkAllCheckbox.addEventListener("change", function() {
+      for (let i = 0; i < checkboxes.length; i++) {
+        checkboxes[i].checked = this.checked;
+      } 
+    });
+
+    for (let i = 0; i < checkboxes.length; i++) {
+      checkboxes[i].addEventListener("change", function() {
+        var allChecked = true;
+        for (let j = 0; j < checkboxes.length; j++) {
+          if (!checkboxes[j].checked) {
+            allChecked = false;
+            break;
+          }
+        }
+        checkAllCheckbox.checked = allChecked;
+      });
+    }
+  }
+  
+  function getHistoricos(id) {
+    return new Promise(function(resolve, reject) {
+      $.ajax({
+        url: url_getHistoricos + "/" + id,
+        method: 'GET',
+        success: function(data) {
+          resolve(data);
+        },
+        error: function(error) {
+          reject(error);
+        }
+      });
+    });
+  }
+
+  $(document).ready(function(){
+    $("#id").keyup(function(){
+      _this = this;
+      $.each($("#test tbody tr"), function() {
+        if($(this).text().toLowerCase().indexOf($(_this).val().toLowerCase()) === -1)
+          $(this).hide();
+        else
+          $(this).show();
+      });
+    });
+  });
+
+  //Duracion de alerta (agregado, elimnado, editado)
+  $("solicitud").ready(function(){
+    setTimeout(function(){
+      $("div.alert").fadeOut();
+    }, 5000 ); // 5 secs
+
+  });
+
+  //modal show
+  function fnOpenModalShow(id) {
+    var myModal = new bootstrap.Modal(document.getElementById('show2'));
+    $.ajax({
+      url: url_show_solicitud + "/" + id,
+      type: 'GET',
+      success: function(data) {
+        // Borrar contenido anterior
+        $("#modalshow").empty();
+        // Establecer el contenido del modal
+        $("#modalshow").html(data);
+
+        // Borrar contenido anterior
+        $("#modalfooter").empty();
+
+        // Agregar el botón "Cerrar" al footer
+        $("#modalfooter").append(closeButton);
+
+        // Mostrar el modal
+        myModal.show();
+
+        // Cambiar el tamaño del modal a "modal-lg"
+        var modalDialog = myModal._element.querySelector('.modal-dialog');
+        modalDialog.classList.remove('modal-sm');
+        modalDialog.classList.add('modal-lg');
+      },
+    });
+  }
+
+  //modal update
+  function fnOpenModalUpdate(id){
+    var myModal = new bootstrap.Modal(document.getElementById('show2'));
+    $.ajax({
+      url: url_show_update_solicitud + "/" + id,
+      type: 'GET',
+      success: function(data) {
+        // Borrar contenido anterior
+        $("#modalshow").empty();
+        // Establecer el contenido del modal
+        $("#modalshow").html(data);
+
+        // Borrar contenido anterior
+        $("#modalfooter").empty();
+
+        // Agregar el botón "Cerrar y Guardar" al footer
+        $("#modalfooter").append(closeButton);
+        $("#modalfooter").append(saveButton);
+
+        // Cambiar la acción del formulario
+        $('#myForm').attr('action', ruta_update);
+
+        // Mostrar el modal
+        myModal.show();
+
+        // Cambiar el tamaño del modal a "modal-lg"
+        var modalDialog = myModal._element.querySelector('.modal-dialog');
+        modalDialog.classList.remove('modal-sm');
+        modalDialog.classList.add('modal-lg');
+      },
+    });
+  }
+  $('#show2').on('show.bs.modal', function (event) {
+    $.get('select_estado/',function(data){
+      var html_select = '<option value="">Seleccione </option>'
+
+      for(var i = 0; i<data.length; i ++){
+        html_select += '<option value ="'+data[i].id+'">'+data[i].nombre+'</option>';
+      }
+      $('#estado').html(html_select);
+
+      $('#rep').on('change', function() {
+        if ($(this).is(':checked')) {
+          $('#divDescRep').show();
+        } else {
+          $('#divDescRep').hide();
+        }
+      });
+    });
+  });
+
+  //modal assing
+  function fnOpenModalAssing(id){
+    var myModal = new bootstrap.Modal(document.getElementById('show2'));
+    $.ajax({
+      url: url_show_assing_solicitud + "/" + id,
+      type: 'GET',
+      success: function(data) {
+        // Borrar contenido anterior
+        $("#modalshow").empty();
+        // Establecer el contenido del modal
+        $("#modalshow").html(data);
+
+        // Borrar contenido anterior
+        $("#modalfooter").empty();
+        // Agregar el botón "Cerrar y Guardar" al footer
+
+        $("#modalfooter").append(closeButton);
+        $("#modalfooter").append(saveButton);
+
+        // Cambiar la acción del formulario
+        $('#myForm').attr('action', ruta_assing);
+
+        // Mostrar el modal
+        myModal.show();
+
+        // Cambiar el tamaño del modal a "modal-sm"
+        var modalDialog = myModal._element.querySelector('.modal-dialog');
+        modalDialog.classList.remove('modal-lg');
+        modalDialog.classList.add('modal-sm');
+      },
+    });
+    $('#show2').on('show.bs.modal', function (event) {
+      $.get('select_users/',function(data){
+        var html_select = '<option value="">Seleccione </option>'
+        for(var i = 0; i<data[0].length; i ++){
+          for(var k = 0; k<data[1].length; k ++){
+            if((data[0][i].id == data[1][k].model_id) && (data[1][k].role_id == 3)){
+              html_select += '<option value ="'+data[0][i].id+'">'+data[0][i].name+'</option>';
+            }
+          }
+        }
+        $('#user').html(html_select);
+      });
+    });
+  }
+  
+  function aprobarSolicitud(id) {
+    if (confirm('¿Está seguro que desea aprobar esta solicitud?')) {
+      document.getElementById('aprobarForm' + id).submit();
+    }
+  }
+
+  function fnOpenModalReclaim(id){
+    var myModal = new bootstrap.Modal(document.getElementById('show2'));
+    $.ajax({
+      url: url_show_reclamar_solicitud + "/" + id,
+      type: 'GET',
+      success: function(data) {
+        // Borrar contenido anterior
+        $("#modalshow").empty();
+        // Establecer el contenido del modal
+        $("#modalshow").html(data);
+
+        // Borrar contenido anterior
+        $("#modalfooter").empty();
+
+        // Agregar el botón "Cerrar y Guardar" al footer
+        $("#modalfooter").append(closeButton);
+        $("#modalfooter").append(saveButton);
+
+        // Cambiar la acción del formulario
+        $('#myForm').attr('action', ruta_reclaim);
+
+        // Mostrar el modal
+        myModal.show();
+
+        // Cambiar el tamaño del modal a "modal-lg"
+        var modalDialog = myModal._element.querySelector('.modal-dialog');
+        modalDialog.classList.remove('modal-sm');
+        modalDialog.classList.add('modal-lg');
+      },
+    });
+  }
+
+  // Obtener el valor del parámetro "idsolicitud" de la URL
+  var urlParams = new URLSearchParams(window.location.search);
+  var idSolicitud = urlParams.get('idsolicitud');
+
+  // Obtener el valor del parámetro "source" de la URL
+  var source = urlParams.get('source');
+
+  // Verificar si el acceso proviene del correo electrónico
+  if (source === 'email') {
+    // Ejecutar la función correspondiente con el valor de "idSolicitud"
+    fnOpenModalReclaim(idSolicitud);
+  }else if(source === 'detalle'){
+    fnOpenModalShow(idSolicitud);
+  }
+
+</script>
+
+@stop

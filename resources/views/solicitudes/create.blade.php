@@ -1,0 +1,41 @@
+<!-- Modal Agregar-->
+<input type="hidden" name="id">
+
+<!-- Título del modal -->
+<h5 class="modal-title">Agregar solicitud</h5>
+<hr>
+
+<div class="form-group col-md-12">
+  <label for="title"><strong>Titulo:</strong></label>
+  <input type="text" name="titulo" class="form-control"  autocomplete="off" id="titulo" minlength="10" maxlength="50" required>
+
+  <label for="title"><strong>Descripcion:</strong></label>
+  <textarea rows="3" type="text" class="form-control" name="descripcion" id="descripcion"  minlength="10" maxlength="500" required></textarea>
+              
+  <div class="row" >
+    <div class="col-6" id="div_tipo_solicitud">
+      <label for="title"><strong>Tipo de solicitud:</strong></label>
+      <select class="form-control" name="tipo_solicitud" id="tipo_solicitud" required></select>
+    </div>
+    <div class="col-6" id="div_equipo">
+      <label for="title"><strong>Equipo:</strong></label>&nbsp&nbsp&nbsp&nbsp<a role="button" class="fa-solid fa-magnifying-glass default" 
+      href="#" title="Mostrar Equipos" data-toggle="modal" data-target="#mostrar" onclick="fnOpenModalShowEquipos()"></a>
+      <br>
+      <select class="form-control select2" name="equipo" id="equipo" style="width: 100%;"></select>
+    </div>
+    <div class="col-12" id="div_descripcion">
+      <label for="title"><strong>Descripcion de equipo:</strong></label>
+      <textarea rows="3" type="text" class="form-control" name="descripcion_equipo" id="descripcion_equipo"  minlength="10" maxlength="500"></textarea>
+    </div>
+    <div class="col-6">
+      <label for="title"><strong>Area:</strong></label>
+      <select class="form-control" name="area" id="area" required></select>
+    </div>
+    <div class="col-6" style="display:none;" id="div_localizacion">
+      <label for="title"><strong>Localizacion:</strong></label>
+      <select class="form-control" name="localizacion" id="localizacion" required></select>
+    </div>
+  </div>
+  <input type="hidden" name="solicitante" value="{{ Auth::id() }}">
+</div>
+      
